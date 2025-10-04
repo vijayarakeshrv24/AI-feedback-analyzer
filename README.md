@@ -1,73 +1,161 @@
-# Welcome to your Lovable project
 
-## Project info
+🧠 Customer Feedback Prioritizer
 
-**URL**: https://lovable.dev/projects/3d1fddfe-6414-4c4d-8e08-fba97d200643
+AI Agent Hackathon 2025 – Product Space
 
-## How can I edit this code?
+An AI-powered system that helps product teams cut through feedback chaos.
+This agent automatically categorizes, analyzes, and prioritizes customer feedback based on urgency and impact, generating actionable insights that integrate directly into team workflows (Slack, Notion, or Email).
 
-There are several ways of editing your application.
 
-**Use Lovable**
+---
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/3d1fddfe-6414-4c4d-8e08-fba97d200643) and start prompting.
+🚀 Features
 
-Changes made via Lovable will be committed automatically to this repo.
+🔹 Core Capabilities
 
-**Use your preferred IDE**
+🏷 Categorizes feedback (Bug / Feature / UX / Performance)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+📊 Scores entries by Urgency × Impact
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+🔝 Identifies recurring pain points via clustering
 
-Follow these steps:
+📩 Generates weekly digests with prioritized action items
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+💬 Built-in chatbot to query and discuss feedback insights
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+🔹 Interface Highlights
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+Upload Tab → Import feedback data (CSV, forms, etc.)
 
-**Edit a file directly in GitHub**
+Analysis Tab → Run AI categorization and scoring
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Cluster Tab → View grouped feedback patterns
 
-**Use GitHub Codespaces**
+Digest Tab → Weekly summarized insights (now unified in a single tab)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Auth Pages → Login / Register / Sign In / Sign Out
 
-## What technologies are used for this project?
 
-This project is built with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+🧩 Architecture Overview
 
-Simply open [Lovable](https://lovable.dev/projects/3d1fddfe-6414-4c4d-8e08-fba97d200643) and click on Share -> Publish.
+Multi-Agent Workflow:
 
-## Can I connect a custom domain to my Lovable project?
+1. Collector Agent → Gathers raw feedback
 
-Yes, you can!
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+2. Categorizer Agent → Classifies and scores
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+3. Analyzer Agent → Detects patterns and ranks pain points
+
+
+4. Reporter Agent → Generates summaries and sends digests
+
+
+
+Tech Stack:
+
+Frontend: React (Vite + TailwindCSS)
+
+Backend: Node.js + Express
+
+Database: Supabase (PostgreSQL + Auth)
+
+AI Engine: Groq API
+
+Deployment: Vercel (Frontend) + Render (Backend)
+
+
+🧪 How It Works
+
+1. Upload feedback → CSV, form, or manual entry
+
+
+2. Analyze → AI scores each entry by urgency & impact
+
+
+3. Cluster → Groups similar feedback to detect major themes
+
+
+4. Digest → Auto-generates a weekly action summary
+
+
+5. Query via Chatbot → Ask questions like “What’s the top UX issue this week?”
+
+
+
+
+---
+
+🔐 Authentication Flow
+
+Supabase handles sign-up, login, and user sessions
+
+Express manages protected API routes
+
+Users can log in/out seamlessly from the UI
+
+
+
+---
+
+🏁 Hackathon Progress
+
+Day 1: Foundation & Architecture
+
+Validated problem with real teams
+
+Designed 4-agent system
+
+Finalized stack setup
+
+
+Day 2: UI Design
+
+Built tabs: Upload / Analysis / Cluster / Digest
+
+Integrated navigation & workflow
+
+
+Day 3: Backend Integration & Chatbot
+
+Connected Supabase + Express backend
+
+Built chatbot for feedback queries
+
+Added authentication (Login / Register / Logout)
+
+Merged workflow into a unified Digest tab
+
+
+
+---
+
+💡 Key Insight
+
+> The power of AI isn’t just automation — it’s clarity.
+This agent turns overwhelming data into decisions that matter.
+
+
+
+
+---
+
+👥 Team
+
+Suriya – Full Stack Developer (APIs + Database + Architecture)
+
+Vijayarakesh R – Full Stack Developer (Frontend + Integration)
+
+
+
+---
+
+🏷 Tags
+
+#AIAgents #Hackathon #ProductSpace #ProductManagement #SaaS #Innovation
+
