@@ -1,0 +1,13 @@
+project_id = "uudvmlhlgqbloymwkszh"
+
+[functions.analyze-feedback]
+verify_jwt = false
+
+[functions.cluster-feedback]
+verify_jwt = false
+
+[functions.generate-digest]
+verify_jwt = false
+
+[functions.chat-with-feedback]
+verify_jwt = true
