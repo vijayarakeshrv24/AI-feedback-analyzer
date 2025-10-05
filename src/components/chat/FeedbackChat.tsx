@@ -1,40 +1,50 @@
 import { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Send, Plus, MessageSquare } from "lucide-react";
+import {
+  Loader2,
+  Send,
+  Plus,
+  MessageSquare,
+  Bot,
+  User,
+  Menu,
+  X,
+} from "lucide-react";
 
 interface Message {
+  id: string;
   role: "user" | "assistant";
   content: string;
 }
 
 const FeedbackChat = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [currentConversation, setCurrentConversation] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<any[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [isFirstMessage, setIsFirstMessage] = useState(true);
-  const { toast } = useToast();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadConversations();
   }, []);
 
   useEffect(() => {
-    if (conversationId) {
-      loadMessages();
-    }
-  }, [conversationId]);
-
-  useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [currentConversation]);
 
   const loadConversations = async () => {
     const { data } = await supabase
@@ -44,72 +54,86 @@ const FeedbackChat = () => {
     setConversations(data || []);
   };
 
-  const loadMessages = async () => {
-    if (!conversationId) return;
+  const loadMessages = async (convId: string) => {
     const { data } = await supabase
       .from("chat_messages")
       .select("*")
-      .eq("conversation_id", conversationId)
+      .eq("conversation_id", convId)
       .order("created_at");
-    
-    setMessages(data?.map(m => ({ role: m.role as "user" | "assistant", content: m.content })) || []);
-    setIsFirstMessage(data?.length === 0);
+
+    setCurrentConversation(
+      data?.map((m) => ({
+        id: m.id,
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })) || []
+    );
+    setConversationId(convId);
   };
 
-  const createNewConversation = () => {
-    setConversationId(null);
-    setMessages([]);
-    setIsFirstMessage(true);
+  const handleHistoryClick = (convId: string) => {
+    loadMessages(convId);
   };
 
   const handleSend = async () => {
     if (!input.trim()) return;
-
     const userMessage = input.trim();
-    let activeConversationId = conversationId;
-
-    // Auto-create conversation on first message
-    if (!conversationId || isFirstMessage) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Generate title from first message (first 50 chars)
-      const title = userMessage.length > 50 ? userMessage.substring(0, 50) + "..." : userMessage;
-
-      const { data, error } = await supabase
-        .from("chat_conversations")
-        .insert([{ title, user_id: user.id }])
-        .select()
-        .single();
-
-      if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
-        return;
-      }
-
-      activeConversationId = data.id;
-      setConversationId(data.id);
-      setIsFirstMessage(false);
-      loadConversations();
-    }
-
     setInput("");
-    setMessages(prev => [...prev, { role: "user", content: userMessage }]);
     setIsLoading(true);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const { data, error } = await supabase.functions.invoke("chat-with-feedback", {
+      let activeConversationId = conversationId;
+
+      // Create new conversation if none exists
+      if (!activeConversationId) {
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) throw new Error("User not authenticated.");
+
+        const title =
+          userMessage.length > 50
+            ? userMessage.substring(0, 50) + "..."
+            : userMessage;
+
+        const { data: convData, error: convError } = await supabase
+          .from("chat_conversations")
+          .insert([{ title, user_id: user.id }])
+          .select()
+          .single();
+        if (convError) throw convError;
+
+        activeConversationId = convData.id;
+        setConversationId(activeConversationId);
+        setConversations((prev) => [convData, ...prev]);
+      }
+
+      // Add user message
+      setCurrentConversation((prev) => [
+        ...prev,
+        { id: crypto.randomUUID(), role: "user", content: userMessage },
+      ]);
+
+      // Call Edge Function
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke("chat-with-feedback", {
         body: { message: userMessage, conversationId: activeConversationId },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`
-        }
+        headers: { Authorization: `Bearer ${session?.access_token}` },
       });
 
-      if (error) throw error;
+      // Add assistant response
+      setCurrentConversation((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: res.data.response,
+        },
+      ]);
 
-      setMessages(prev => [...prev, { role: "assistant", content: data.response }]);
+      await loadConversations();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -122,21 +146,47 @@ const FeedbackChat = () => {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-[600px]">
-      {/* Sidebar */}
-      <Card className="md:col-span-1">
-        <CardHeader>
-          <CardTitle className="text-lg">Chat History</CardTitle>
+    <div className="relative h-[600px]">
+      {/* Mobile menu button */}
+      {/* Mobile menu button */}
+      {!isSidebarOpen && (
+        <Button
+          onClick={() => setIsSidebarOpen(true)}
+          className="md:hidden absolute top-4 left-4 z-50"
+          variant="outline"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+      )}
+
+      {/* Mobile Sidebar */}
+      <div
+        className={`absolute inset-0 z-40 bg-background border-r transform transition-transform duration-300 md:hidden ${
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="p-4 flex justify-between items-center border-b">
+          <h3 className="text-lg font-medium">Chat History</h3>
           <Button
-            onClick={createNewConversation}
-            className="w-full mt-2"
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsSidebarOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </Button>
+        </div>
+        <div className="p-4">
+          <Button
+            onClick={() => {
+              setConversationId(null);
+              setCurrentConversation([]);
+              setIsSidebarOpen(false);
+            }}
+            className="w-full mb-4"
             variant="outline"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            New Chat
+            <Plus className="h-4 w-4 mr-2" /> New Chat
           </Button>
-        </CardHeader>
-        <CardContent>
           <ScrollArea className="h-[400px]">
             <div className="space-y-2">
               {conversations.map((conv) => (
@@ -145,8 +195,8 @@ const FeedbackChat = () => {
                   variant={conversationId === conv.id ? "secondary" : "ghost"}
                   className="w-full justify-start text-left truncate"
                   onClick={() => {
-                    setConversationId(conv.id);
-                    setIsFirstMessage(false);
+                    handleHistoryClick(conv.id);
+                    setIsSidebarOpen(false);
                   }}
                 >
                   <MessageSquare className="h-4 w-4 mr-2 flex-shrink-0" />
@@ -155,58 +205,115 @@ const FeedbackChat = () => {
               ))}
             </div>
           </ScrollArea>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Chat Area */}
-      <Card className="md:col-span-3">
-        <CardHeader>
-          <CardTitle>Feedback AI Assistant</CardTitle>
-          <CardDescription>
-            Ask questions about your customer feedback data
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <ScrollArea className="h-[400px] pr-4">
-            <div className="space-y-4">
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                >
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 h-full">
+        {/* Desktop Sidebar */}
+        <Card className="hidden md:flex md:col-span-1 flex-col">
+          <CardHeader>
+            <CardTitle>Chat History</CardTitle>
+            <Button
+              onClick={() => {
+                setConversationId(null);
+                setCurrentConversation([]);
+              }}
+              className="w-full mt-2"
+              variant="outline"
+            >
+              <Plus className="h-4 w-4 mr-2" /> New Chat
+            </Button>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full">
+              <div className="space-y-2 pr-4">
+                {conversations.map((conv) => (
+                  <Button
+                    key={conv.id}
+                    variant={conversationId === conv.id ? "secondary" : "ghost"}
+                    className="w-full justify-start text-left"
+                    onClick={() => handleHistoryClick(conv.id)}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <span className="truncate">{conv.title}</span>
+                  </Button>
+                ))}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+
+        {/* Chat Area */}
+        <Card className="md:col-span-3 flex flex-col h-full">
+          <CardHeader className="flex-shrink-0">
+            <CardTitle className="pl-12 md:pl-0">
+              Feedback AI Assistant
+            </CardTitle>
+            <CardDescription className="pl-12 md:pl-0">
+              Ask questions about your customer feedback data
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="flex flex-col flex-1 overflow-hidden">
+            <ScrollArea className="flex-1 pr-4 mb-4">
+              <div className="space-y-4">
+                {currentConversation.map((msg) => (
                   <div
-                    className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                      msg.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
+                    key={msg.id}
+                    className={`flex items-start gap-2 ${
+                      msg.role === "user" ? "flex-row-reverse" : "flex-row"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    {msg.role === "user" ? (
+                      <User className="h-5 w-5 mt-1 text-primary flex-shrink-0" />
+                    ) : (
+                      <Bot className="h-5 w-5 mt-1 text-muted-foreground flex-shrink-0" />
+                    )}
+                    <div
+                      className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                        msg.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">
+                        {msg.content}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
-              <div ref={scrollRef} />
-            </div>
-          </ScrollArea>
+                ))}
+                <div ref={scrollRef} />
+              </div>
+            </ScrollArea>
 
-          <div className="flex gap-2">
-            <Input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Ask about feedback trends, sentiment analysis..."
-              disabled={isLoading}
-            />
-            <Button onClick={handleSend} disabled={isLoading || !input.trim()}>
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+            {/* Input area */}
+            <div className="flex gap-2 flex-shrink-0">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) =>
+                  e.key === "Enter" && !e.shiftKey && handleSend()
+                }
+                placeholder="Ask about feedback trends, sentiment analysis..."
+                disabled={isLoading}
+                className="flex-1"
+              />
+              <Button
+                onClick={handleSend}
+                disabled={isLoading || !input.trim()}
+                size="icon"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import {
@@ -11,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 interface FeedbackWithAnalysis {
   id: string;
@@ -29,23 +35,19 @@ interface FeedbackTableProps {
   sortBy?: string;
 }
 
-const FeedbackTable = ({ sortBy = "date" }: FeedbackTableProps) => {
+const FeedbackTable = ({ sortBy = "urgency" }: FeedbackTableProps) => {
   const [feedback, setFeedback] = useState<FeedbackWithAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadFeedback();
 
-    // Subscribe to real-time updates
+    // Real-time updates
     const channel = supabase
-      .channel('feedback-changes')
+      .channel("feedback-changes")
       .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'feedback'
-        },
+        "postgres_changes",
+        { event: "*", schema: "public", table: "feedback" },
         () => {
           loadFeedback();
         }
@@ -77,30 +79,44 @@ const FeedbackTable = ({ sortBy = "date" }: FeedbackTableProps) => {
         .limit(50);
 
       if (error) throw error;
-      
-      // Sort feedback based on selected option
+
+      const urgencyOrder = { high: 3, medium: 2, low: 1 }; // higher = more important
+      const sentimentOrder = { negative: 0, neutral: 1, positive: 2 };
+      const impactOrder = {
+        critical: 0,
+        feature_request: 1,
+        nice_to_have: 2,
+      };
+
       const sortedData = [...(data || [])].sort((a, b) => {
         const aAnalysis = a.feedback_analysis?.[0];
         const bAnalysis = b.feedback_analysis?.[0];
-        
+
         switch (sortBy) {
           case "sentiment":
-            const sentimentOrder = { negative: 0, neutral: 1, positive: 2 };
-            return (sentimentOrder[aAnalysis?.sentiment as keyof typeof sentimentOrder] || 999) - 
-                   (sentimentOrder[bAnalysis?.sentiment as keyof typeof sentimentOrder] || 999);
+            return (
+              (sentimentOrder[aAnalysis?.sentiment as keyof typeof sentimentOrder] || 999) -
+              (sentimentOrder[bAnalysis?.sentiment as keyof typeof sentimentOrder] || 999)
+            );
           case "urgency":
-            const urgencyOrder = { high: 0, medium: 1, low: 2 };
-            return (urgencyOrder[aAnalysis?.urgency as keyof typeof urgencyOrder] || 999) - 
-                   (urgencyOrder[bAnalysis?.urgency as keyof typeof urgencyOrder] || 999);
+            // Descending: High (3) → Medium (2) → Low (1)
+            return (
+              (urgencyOrder[bAnalysis?.urgency as keyof typeof urgencyOrder] || 0) -
+              (urgencyOrder[aAnalysis?.urgency as keyof typeof urgencyOrder] || 0)
+            );
           case "impact":
-            const impactOrder = { critical: 0, feature_request: 1, nice_to_have: 2 };
-            return (impactOrder[aAnalysis?.impact as keyof typeof impactOrder] || 999) - 
-                   (impactOrder[bAnalysis?.impact as keyof typeof impactOrder] || 999);
+            return (
+              (impactOrder[aAnalysis?.impact as keyof typeof impactOrder] || 999) -
+              (impactOrder[bAnalysis?.impact as keyof typeof impactOrder] || 999)
+            );
           default:
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            return (
+              new Date(b.created_at).getTime() -
+              new Date(a.created_at).getTime()
+            );
         }
       });
-      
+
       setFeedback(sortedData);
     } catch (error) {
       console.error("Error loading feedback:", error);
@@ -111,19 +127,40 @@ const FeedbackTable = ({ sortBy = "date" }: FeedbackTableProps) => {
 
   const getSentimentColor = (sentiment: string) => {
     switch (sentiment) {
-      case "positive": return "default";
-      case "neutral": return "secondary";
-      case "negative": return "destructive";
-      default: return "outline";
+      case "positive":
+        return "default";
+      case "neutral":
+        return "secondary";
+      case "negative":
+        return "destructive";
+      default:
+        return "outline";
     }
   };
 
-  const getUrgencyColor = (urgency: string) => {
+  const getUrgencyStyle = (urgency: string) => {
     switch (urgency) {
-      case "high": return "destructive";
-      case "medium": return "secondary";
-      case "low": return "outline";
-      default: return "outline";
+      case "high":
+        return "bg-red-500 text-white";
+      case "medium":
+        return "bg-yellow-400 text-black";
+      case "low":
+        return "bg-green-500 text-white";
+      default:
+        return "bg-gray-200 text-gray-700";
+    }
+  };
+
+  const formatUrgencyLabel = (urgency: string) => {
+    switch (urgency) {
+      case "high":
+        return "High";
+      case "medium":
+        return "Medium";
+      case "low":
+        return "Low";
+      default:
+        return "Unknown";
     }
   };
 
@@ -141,7 +178,9 @@ const FeedbackTable = ({ sortBy = "date" }: FeedbackTableProps) => {
     <Card className="shadow-md">
       <CardHeader>
         <CardTitle>Recent Feedback</CardTitle>
-        <CardDescription>Latest customer feedback with AI analysis</CardDescription>
+        <CardDescription>
+          Sorted by urgency — High → Medium → Low
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
@@ -159,8 +198,11 @@ const FeedbackTable = ({ sortBy = "date" }: FeedbackTableProps) => {
             <TableBody>
               {feedback.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    No feedback available. Upload some feedback to get started!
+                  <TableCell
+                    colSpan={6}
+                    className="text-center text-muted-foreground"
+                  >
+                    No feedback available.
                   </TableCell>
                 </TableRow>
               ) : (
@@ -176,36 +218,51 @@ const FeedbackTable = ({ sortBy = "date" }: FeedbackTableProps) => {
                           </div>
                         )}
                       </TableCell>
+
                       <TableCell>
                         {analysis ? (
                           <Badge variant={getSentimentColor(analysis.sentiment)}>
                             {analysis.sentiment}
                           </Badge>
                         ) : (
-                          <span className="text-muted-foreground text-sm">Pending</span>
+                          <span className="text-muted-foreground text-sm">
+                            Pending
+                          </span>
                         )}
                       </TableCell>
+
                       <TableCell>
                         {analysis ? (
-                          <Badge variant={getUrgencyColor(analysis.urgency)}>
-                            {analysis.urgency}
-                          </Badge>
+                          <span
+                            className={`px-2 py-1 rounded-md text-xs font-semibold ${getUrgencyStyle(
+                              analysis.urgency
+                            )}`}
+                          >
+                            {formatUrgencyLabel(analysis.urgency)}
+                          </span>
                         ) : (
-                          <span className="text-muted-foreground text-sm">Pending</span>
+                          <span className="text-muted-foreground text-sm">
+                            Pending
+                          </span>
                         )}
                       </TableCell>
+
                       <TableCell>
                         {analysis ? (
                           <span className="text-sm capitalize">
                             {analysis.impact.replace(/_/g, " ")}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground text-sm">Pending</span>
+                          <span className="text-muted-foreground text-sm">
+                            Pending
+                          </span>
                         )}
                       </TableCell>
+
                       <TableCell>
                         <Badge variant="outline">{item.source}</Badge>
                       </TableCell>
+
                       <TableCell className="text-right text-sm text-muted-foreground">
                         {new Date(item.created_at).toLocaleDateString()}
                       </TableCell>
@@ -222,4 +279,3 @@ const FeedbackTable = ({ sortBy = "date" }: FeedbackTableProps) => {
 };
 
 export default FeedbackTable;
-  

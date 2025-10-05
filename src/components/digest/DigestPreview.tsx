@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Mail, Sparkles, Brain } from "lucide-react";
+import { Loader2, Mail, Sparkles, Brain, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -10,6 +16,7 @@ const DigestPreview = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isClustering, setIsClustering] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const [selectedDigest, setSelectedDigest] = useState<any | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -23,7 +30,6 @@ const DigestPreview = () => {
         .select("*")
         .order("sent_at", { ascending: false })
         .limit(5);
-
       setHistory(data || []);
     } catch (error) {
       console.error("Error loading history:", error);
@@ -33,8 +39,9 @@ const DigestPreview = () => {
   const handleCluster = async () => {
     setIsClustering(true);
     try {
-      const { data, error } = await supabase.functions.invoke("cluster-feedback");
-
+      const { data, error } = await supabase.functions.invoke(
+        "cluster-feedback"
+      );
       if (error) throw error;
 
       toast({
@@ -42,7 +49,6 @@ const DigestPreview = () => {
         description: `Created ${data.clustersCreated} clusters from ${data.totalFeedback} feedback entries.`,
       });
     } catch (error: any) {
-      console.error("Error:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to cluster feedback",
@@ -54,42 +60,63 @@ const DigestPreview = () => {
   };
 
   const handleGenerate = async () => {
-    setIsGenerating(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({ title: "You must be logged in", variant: "destructive" });
-        return;
-      }
+  setIsGenerating(true);
+  try {
+    // Check if user is logged in
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      toast({ title: "You must be logged in", variant: "destructive" });
+      return;
+    }
 
-      const { data, error } = await supabase.functions.invoke("generate-digest");
+    // Check if there's any feedback in the database
+    const { data: feedback, error: feedbackError } = await supabase
+      .from("feedback")
+      .select("id")
+      .limit(1); // only need to know if any exist
 
-      if (error) throw error;
+    if (feedbackError) throw feedbackError;
 
-      setDigest(data.digest);
+    if (!feedback || feedback.length === 0) {
       toast({
-        title: "Digest generated",
-        description: "Weekly insights have been created successfully.",
-      });
-
-      await loadHistory();
-    } catch (error: any) {
-      console.error("Error:", error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to generate digest",
+        title: "No feedback available",
+        description: "There is no feedback to generate a digest.",
         variant: "destructive",
       });
-    } finally {
-      setIsGenerating(false);
+      return; // stop here, don't generate
     }
-  };
+
+    // Generate digest
+    const { data, error } = await supabase.functions.invoke("generate-digest");
+    if (error) throw error;
+
+    setDigest(data.digest);
+    toast({
+      title: "Digest generated",
+      description: "Weekly insights have been created successfully.",
+    });
+
+    await loadHistory();
+  } catch (error: any) {
+    toast({
+      title: "Error",
+      description: error.message || "Failed to generate digest",
+      variant: "destructive",
+    });
+  } finally {
+    setIsGenerating(false);
+  }
+};
+
 
   return (
     <div className="space-y-6">
+      {/* Digest Generator */}
       <Card className="bg-gradient-card shadow-md">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-4">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-accent" />
@@ -99,12 +126,12 @@ const DigestPreview = () => {
                 AI-powered summary of top feedback for your team
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
               <Button
                 onClick={handleCluster}
                 disabled={isClustering}
                 variant="outline"
-                className="gap-2"
+                className="gap-2 w-full md:w-auto"
               >
                 {isClustering ? (
                   <>
@@ -121,7 +148,7 @@ const DigestPreview = () => {
               <Button
                 onClick={handleGenerate}
                 disabled={isGenerating}
-                className="gap-2"
+                className="gap-2 w-full md:w-auto"
               >
                 {isGenerating ? (
                   <>
@@ -140,6 +167,7 @@ const DigestPreview = () => {
         </CardHeader>
       </Card>
 
+      {/* Latest Digest */}
       {digest && (
         <Card className="shadow-md">
           <CardHeader>
@@ -152,18 +180,17 @@ const DigestPreview = () => {
                 {digest}
               </div>
             </div>
-            <div className="mt-6 flex gap-2">
-              <Button variant="outline" className="gap-2">
+            <div className="mt-6 flex flex-col md:flex-row gap-2">
+              <Button variant="outline" className="gap-2 w-full md:w-auto">
                 <Mail className="h-4 w-4" />
                 Send via Email
               </Button>
-              <Button variant="outline">Send to Slack</Button>
-              <Button variant="outline">Send to Notion</Button>
             </div>
           </CardContent>
         </Card>
       )}
 
+      {/* Digest History */}
       {history.length > 0 && (
         <Card className="shadow-md">
           <CardHeader>
@@ -175,7 +202,8 @@ const DigestPreview = () => {
               {history.map((item) => (
                 <div
                   key={item.id}
-                  className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => setSelectedDigest(item)}
                 >
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium">
@@ -207,6 +235,7 @@ const DigestPreview = () => {
         </Card>
       )}
 
+      {/* Empty State */}
       {!digest && history.length === 0 && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center h-64 space-y-4">
@@ -220,6 +249,55 @@ const DigestPreview = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Modal for Selected Digest */}
+{selectedDigest && (
+  <div className="fixed inset-0 z-50 bg-black/50 ">
+    <div className="flex justify-center items-start sm:items-center pt-4 sm:pt-8 pb-4 px-2 min-h-screen">
+      <div className="bg-background rounded-lg w-full sm:max-w-lg p-4 sm:p-6 relative shadow-lg overflow-y-auto max-h-[90vh]">
+        {/* Close button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-3 right-3 sm:top-4 sm:right-4"
+          onClick={() => setSelectedDigest(null)}
+        >
+          <X className="h-5 w-5" />
+        </Button>
+
+        {/* Modal content */}
+        <CardTitle className="mb-2 text-sm sm:text-base">
+          Digest from{" "}
+          {new Date(selectedDigest.sent_at).toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
+        </CardTitle>
+        <CardContent className="text-sm sm:text-base">
+          {selectedDigest.channels?.length > 0 && (
+            <div className="flex gap-1 sm:gap-2 mb-4 flex-wrap">
+              {selectedDigest.channels.map((channel: string) => (
+                <span
+                  key={channel}
+                  className="text-xs sm:text-sm px-2 py-1 bg-primary/10 text-primary rounded"
+                >
+                  {channel}
+                </span>
+              ))}
+            </div>
+          )}
+          <div className="whitespace-pre-wrap text-sm sm:text-base">
+            {selectedDigest.content}
+          </div>
+        </CardContent>
+      </div>
+    </div>
+  </div>
+)}
+
+
     </div>
   );
 };

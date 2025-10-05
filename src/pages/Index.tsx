@@ -53,13 +53,14 @@ const Index = () => {
       <div className="relative">
         <DashboardHeader />
         <Button
-          onClick={handleSignOut}
-          variant="ghost"
-          className="absolute top-4 right-4 gap-2"
-        >
-          <LogOut className="h-4 w-4" />
-          Sign Out
-        </Button>
+  onClick={handleSignOut}
+  variant="outline"
+  className="absolute top-4 right-4 flex items-center gap-2 px-3 py-1 rounded-md shadow-sm hover:bg-red-50 hover:text-red-600 transition-colors"
+>
+  <LogOut className="h-5 w-5" />
+  Sign Out
+</Button>
+
       </div>
 
       {/* Main Content */}
