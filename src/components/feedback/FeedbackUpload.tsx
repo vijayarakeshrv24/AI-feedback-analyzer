@@ -48,7 +48,7 @@ const FeedbackUpload = () => {
 
       toast({
         title: "Feedback submitted",
-        description: "Now analyzing with Groq AI...",
+        description: "Now analyzing with  AI...",
       });
 
       // Analyze with Groq
@@ -269,7 +269,7 @@ const FeedbackUpload = () => {
         {(isSubmitting || isAnalyzing) && (
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            {isAnalyzing ? "Analyzing feedback with Groq AI..." : "Processing CSV..."}
+            {isAnalyzing ? "Analyzing feedback with  AI..." : "Processing CSV..."}
           </div>
         )}
       </div>

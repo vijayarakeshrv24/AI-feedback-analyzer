@@ -86,7 +86,7 @@ const ClusterView = () => {
                 Feedback Clusters
               </CardTitle>
               <CardDescription className="mt-2">
-                AI-powered grouping of similar feedback using Groq embeddings
+                AI-powered grouping of similar feedback 
               </CardDescription>
             </div>
             <Button

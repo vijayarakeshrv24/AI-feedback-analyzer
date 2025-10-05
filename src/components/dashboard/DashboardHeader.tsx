@@ -43,7 +43,7 @@ const DashboardHeader = () => {
         
         {userName && (
           <p className="text-lg text-white mb-2">
-            Welcome, <span className="font-semibold text-white">{userName}!</span>
+            Welcome, <span className="font-bold text-2xl text-white">{userName}!</span>
           </p>
         )}
         
@@ -52,7 +52,7 @@ const DashboardHeader = () => {
         </h1>
         
         <p className="text-xl text-white max-w-2xl mx-auto mb-8">
-          AI-powered feedback analysis with Groq. Classify sentiment, urgency, and impact automatically.
+          AI-powered feedback analysis . Classify sentiment, urgency, and impact automatically.
         </p>
 
         <div className="flex flex-wrap justify-center gap-6 text-sm">
