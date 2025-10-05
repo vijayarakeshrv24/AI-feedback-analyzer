@@ -26,6 +26,12 @@ const FeedbackUpload = () => {
 
     setIsSubmitting(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: "You must be logged in", variant: "destructive" });
+        return;
+      }
+
       // Insert feedback
       const { data: feedbackData, error: feedbackError } = await supabase
         .from("feedback")
@@ -33,6 +39,7 @@ const FeedbackUpload = () => {
           content: manualFeedback,
           source: "manual",
           user_email: userEmail || null,
+          user_id: user.id,
         })
         .select()
         .single();
@@ -90,6 +97,13 @@ const FeedbackUpload = () => {
 
     setIsSubmitting(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: "You must be logged in", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
+
       const text = await file.text();
       const lines = text.split('\n').filter(line => line.trim());
       
@@ -115,6 +129,7 @@ const FeedbackUpload = () => {
           content: content.trim(),
           source: 'csv',
           user_email: email || null,
+          user_id: user.id,
         };
       }).filter(entry => entry.content);
 

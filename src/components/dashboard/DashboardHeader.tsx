@@ -1,19 +1,27 @@
-import { useEffect, useState } from "react";
 import { Bot } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-const DashboardHeader = ({ userName  }) => {
-  const [displayedName, setDisplayedName] = useState("");
+const DashboardHeader = () => {
+  const [userName, setUserName] = useState<string>("");
 
   useEffect(() => {
-    let index = 0;
-    const interval = setInterval(() => {
-      setDisplayedName(userName.slice(0, index + 1));
-      index++;
-      if (index === userName.length) clearInterval(interval);
-    }, 150); // change 150ms to control speed
-    return () => clearInterval(interval);
-  }, [userName]);
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Get user email or profile name
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', user.id)
+          .single();
+        
+        setUserName(profile?.full_name || 'User');
+      }
+    };
+    fetchUser();
+  }, []);
 
   return (
     <div className="relative overflow-hidden">
@@ -30,37 +38,38 @@ const DashboardHeader = ({ userName  }) => {
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 py-16 text-center">
         <div className="inline-flex items-center justify-center p-3 mb-6 rounded-2xl bg-white backdrop-blur-sm">
-          <Bot className="h-8 w-8 text-primary" />
+          <Bot className="h-8 w-8 text-primary " />
         </div>
-
-        <h1 className="text-5xl text-white font-bold mb-4 bg-gradient-primary bg-clip-text text-transparent">
-          Welcome{" "}
-          <span className="text-5xl text-white font-bold">
-            {displayedName}
-          </span>
-          {displayedName.length < userName.length && <span className="text-5xl text-blue-400 font-bold animate-blink"></span>}
-        </h1>
-
-        <h1 className="text-5xl text-white font-bold mb-4 bg-gradient-primary bg-clip-text text-transparent">
+        
+        {userName && (
+          <p className="text-lg text-white mb-2">
+            Welcome, <span className="font-semibold text-white">{userName}!</span>
+          </p>
+        )}
+        
+        <h1 className="text-5xl font-bold mb-4 text-white">
           Feedback Prioritizer
         </h1>
-
+        
         <p className="text-xl text-white max-w-2xl mx-auto mb-8">
           AI-powered feedback analysis with Groq. Classify sentiment, urgency, and impact automatically.
         </p>
-      </div>
 
-      {/* Blinking cursor animation */}
-      <style jsx>{`
-        @keyframes blink {
-          0%, 50%, 100% { opacity: 1; }
-          25%, 75% { opacity: 0; }
-        }
-        .animate-blink {
-          display: inline-block;
-          animation: blink 1s step-start infinite;
-        }
-      `}</style>
+        <div className="flex flex-wrap justify-center gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-success" />
+            <span className="text-white">Real-time Classification</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-accent" />
+            <span className="text-white">Smart Clustering</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-warning" />
+            <span className="text-white">Automated Digests</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

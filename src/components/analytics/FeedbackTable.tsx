@@ -25,7 +25,11 @@ interface FeedbackWithAnalysis {
   }[];
 }
 
-const FeedbackTable = () => {
+interface FeedbackTableProps {
+  sortBy?: string;
+}
+
+const FeedbackTable = ({ sortBy = "date" }: FeedbackTableProps) => {
   const [feedback, setFeedback] = useState<FeedbackWithAnalysis[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -51,7 +55,7 @@ const FeedbackTable = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [sortBy]);
 
   const loadFeedback = async () => {
     try {
@@ -73,7 +77,31 @@ const FeedbackTable = () => {
         .limit(50);
 
       if (error) throw error;
-      setFeedback(data || []);
+      
+      // Sort feedback based on selected option
+      const sortedData = [...(data || [])].sort((a, b) => {
+        const aAnalysis = a.feedback_analysis?.[0];
+        const bAnalysis = b.feedback_analysis?.[0];
+        
+        switch (sortBy) {
+          case "sentiment":
+            const sentimentOrder = { negative: 0, neutral: 1, positive: 2 };
+            return (sentimentOrder[aAnalysis?.sentiment as keyof typeof sentimentOrder] || 999) - 
+                   (sentimentOrder[bAnalysis?.sentiment as keyof typeof sentimentOrder] || 999);
+          case "urgency":
+            const urgencyOrder = { high: 0, medium: 1, low: 2 };
+            return (urgencyOrder[aAnalysis?.urgency as keyof typeof urgencyOrder] || 999) - 
+                   (urgencyOrder[bAnalysis?.urgency as keyof typeof urgencyOrder] || 999);
+          case "impact":
+            const impactOrder = { critical: 0, feature_request: 1, nice_to_have: 2 };
+            return (impactOrder[aAnalysis?.impact as keyof typeof impactOrder] || 999) - 
+                   (impactOrder[bAnalysis?.impact as keyof typeof impactOrder] || 999);
+          default:
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+      });
+      
+      setFeedback(sortedData);
     } catch (error) {
       console.error("Error loading feedback:", error);
     } finally {
@@ -194,3 +222,4 @@ const FeedbackTable = () => {
 };
 
 export default FeedbackTable;
+  

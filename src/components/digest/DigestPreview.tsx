@@ -1,11 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Mail, Sparkles, Brain } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -39,9 +33,7 @@ const DigestPreview = () => {
   const handleCluster = async () => {
     setIsClustering(true);
     try {
-      const { data, error } = await supabase.functions.invoke(
-        "cluster-feedback"
-      );
+      const { data, error } = await supabase.functions.invoke("cluster-feedback");
 
       if (error) throw error;
 
@@ -64,9 +56,13 @@ const DigestPreview = () => {
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke(
-        "generate-digest"
-      );
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: "You must be logged in", variant: "destructive" });
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("generate-digest");
 
       if (error) throw error;
 
@@ -103,12 +99,12 @@ const DigestPreview = () => {
                 AI-powered summary of top feedback for your team
               </CardDescription>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="flex gap-2">
               <Button
                 onClick={handleCluster}
                 disabled={isClustering}
                 variant="outline"
-                className="gap-2 w-full sm:w-auto"
+                className="gap-2"
               >
                 {isClustering ? (
                   <>
@@ -122,11 +118,10 @@ const DigestPreview = () => {
                   </>
                 )}
               </Button>
-
               <Button
                 onClick={handleGenerate}
                 disabled={isGenerating}
-                className="gap-2 w-full sm:w-auto"
+                className="gap-2"
               >
                 {isGenerating ? (
                   <>

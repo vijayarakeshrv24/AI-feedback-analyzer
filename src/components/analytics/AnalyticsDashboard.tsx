@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { supabase } from "@/integrations/supabase/client";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { Loader2, TrendingUp, AlertCircle, MessageSquare } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import FeedbackTable from "./FeedbackTable";
 
 interface AnalyticsData {
@@ -15,6 +16,7 @@ interface AnalyticsData {
 const AnalyticsDashboard = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<string>("date");
 
   useEffect(() => {
     loadAnalytics();
@@ -38,7 +40,7 @@ const AnalyticsDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [sortBy]);
 
   const loadAnalytics = async () => {
     try {
@@ -245,8 +247,26 @@ const AnalyticsDashboard = () => {
         </CardContent>
       </Card>
 
-      {/* Feedback Table */}
-      <FeedbackTable />
+      {/* Feedback Table with Sort */}
+      <Card className="shadow-md">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle>Recent Feedback</CardTitle>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort by..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="date">Sort by Date</SelectItem>
+              <SelectItem value="sentiment">Sort by Sentiment</SelectItem>
+              <SelectItem value="urgency">Sort by Urgency</SelectItem>
+              <SelectItem value="impact">Sort by Impact</SelectItem>
+            </SelectContent>
+          </Select>
+        </CardHeader>
+        <CardContent>
+          <FeedbackTable sortBy={sortBy} />
+        </CardContent>
+      </Card>
     </div>
   );
 };

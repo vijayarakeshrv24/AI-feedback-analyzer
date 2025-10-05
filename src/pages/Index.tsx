@@ -51,7 +51,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div className="relative">
-        <DashboardHeader userName={user.user_metadata?.full_name || user.email || "User"} />
+        <DashboardHeader />
         <Button
           onClick={handleSignOut}
           variant="ghost"

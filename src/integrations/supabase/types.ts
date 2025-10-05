@@ -77,6 +77,7 @@ export type Database = {
           id: string
           sent_at: string
           summary: Json | null
+          user_id: string | null
         }
         Insert: {
           channels?: string[] | null
@@ -84,6 +85,7 @@ export type Database = {
           id?: string
           sent_at?: string
           summary?: Json | null
+          user_id?: string | null
         }
         Update: {
           channels?: string[] | null
@@ -91,6 +93,7 @@ export type Database = {
           id?: string
           sent_at?: string
           summary?: Json | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -102,6 +105,7 @@ export type Database = {
           raw_metadata: Json | null
           source: string
           user_email: string | null
+          user_id: string | null
         }
         Insert: {
           content: string
@@ -110,6 +114,7 @@ export type Database = {
           raw_metadata?: Json | null
           source: string
           user_email?: string | null
+          user_id?: string | null
         }
         Update: {
           content?: string
@@ -118,6 +123,7 @@ export type Database = {
           raw_metadata?: Json | null
           source?: string
           user_email?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
