@@ -274,10 +274,10 @@ const FeedbackChat = () => {
                       className={`max-w-[80%] rounded-lg px-4 py-2 ${
                         msg.role === "user"
                           ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
+                          : "bg-muted text-black"
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">
+                      <p className="text-sm  whitespace-pre-wrap">
                         {msg.content}
                       </p>
                     </div>
