@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Mail, Sparkles, Brain, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
+import Markdown from "markdown-to-jsx"
 const DigestPreview = () => {
   const [digest, setDigest] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -177,7 +177,7 @@ const DigestPreview = () => {
           <CardContent>
             <div className="prose prose-sm max-w-none">
               <div className="whitespace-pre-wrap bg-muted p-4 rounded-lg">
-                {digest}
+                <Markdown>{digest}</Markdown>
               </div>
             </div>
             <div className="mt-6 flex flex-col md:flex-row gap-2">
@@ -226,7 +226,7 @@ const DigestPreview = () => {
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground line-clamp-2">
-                    {item.content}
+                    <Markdown>{item.content}</Markdown>
                   </p>
                 </div>
               ))}
@@ -289,7 +289,7 @@ const DigestPreview = () => {
             </div>
           )}
           <div className="whitespace-pre-wrap text-sm sm:text-base">
-            {selectedDigest.content}
+            <Markdown>{selectedDigest.content}</Markdown>
           </div>
         </CardContent>
       </div>

@@ -21,6 +21,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
+import Markdown from "markdown-to-jsx"
 
 interface Message {
   id: string;
@@ -278,7 +279,10 @@ const FeedbackChat = () => {
                       }`}
                     >
                       <p className="text-sm  whitespace-pre-wrap">
+                       <Markdown>
+                        
                         {msg.content}
+                        </Markdown> 
                       </p>
                     </div>
                   </div>
