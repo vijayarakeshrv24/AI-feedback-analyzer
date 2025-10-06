@@ -45,7 +45,7 @@ const Auth = () => {
         password,
         options: {
           data: { full_name: fullName },
-          emailRedirectTo: 'https://ai-feedback-analyzer-ten.vercel.app/auth'
+          emailRedirectTo: `${window.location.origin}/email-verified`
         }
       });
 
